@@ -4,13 +4,11 @@ const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI)
 
-    // console.log("Mongo Connected")
-    // console.log("DB NAME:", mongoose.connection.name)
-    // console.log("HOST:", mongoose.connection.host)
-    // console.log("USER:", mongoose.connection.user)
+    console.log("✅ MongoDB Connected")
+    console.log("DB:", mongoose.connection.name)
 
   } catch (err) {
-    console.error(err)
+    console.error("❌ Mongo Error:", err.message)
   }
 }
 

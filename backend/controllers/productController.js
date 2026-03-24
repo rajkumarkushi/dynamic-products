@@ -1,34 +1,54 @@
 const Product = require("../models/Product")
+const mongoose = require("mongoose")
+
+const requireDbConnection = (res) => {
+  if (mongoose.connection.readyState !== 1) {
+    res.status(503).json({ message: "Database unavailable", error: "MongoDB not connected" })
+    return false
+  }
+  return true
+}
 
 exports.createProduct = async (req, res) => {
-  const product = await Product.create(req.body)
-  res.json(product)
+  try {
+    if (!requireDbConnection(res)) return
+    const product = await Product.create(req.body)
+    res.json(product)
+  } catch (err) {
+    res.status(503).json({ message: "Database unavailable", error: err.message })
+  }
 }
 
 exports.getProducts = async (req, res) => {
-  const query = {}
+  try {
+    if (!requireDbConnection(res)) return
+    const query = {}
 
-  if (req.query.category) {
-    query.categoryId = req.query.category
-  }
-
-  Object.keys(req.query).forEach(key => {
-    if (key !== "category") {
-      const values = String(req.query[key])
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean)
-
-      query[`attributes.${key}`] = values.length > 1 ? { $in: values } : values[0]
+    if (req.query.category) {
+      query.categoryId = req.query.category
     }
-  })
 
-  const products = await Product.find(query)
-  res.json(products)
+    Object.keys(req.query).forEach(key => {
+      if (key !== "category") {
+        const values = String(req.query[key])
+          .split(",")
+          .map((value) => value.trim())
+          .filter(Boolean)
+
+        query[`attributes.${key}`] = values.length > 1 ? { $in: values } : values[0]
+      }
+    })
+
+    const products = await Product.find(query)
+    res.json(products)
+  } catch (err) {
+    res.status(503).json({ message: "Database unavailable", error: err.message })
+  }
 }
 
 exports.getProductFilters = async (req, res) => {
   try {
+    if (!requireDbConnection(res)) return
     const query = req.query.category ? { categoryId: req.query.category } : {}
     const products = await Product.find(query)
 
@@ -49,12 +69,13 @@ exports.getProductFilters = async (req, res) => {
 
     res.json(response)
   } catch (error) {
-    res.status(500).json({ message: "Failed to load product filters", error: error.message })
+    res.status(503).json({ message: "Database unavailable", error: error.message })
   }
 }
 
 exports.getProductById = async (req, res) => {
   try {
+    if (!requireDbConnection(res)) return
     const product = await Product.findById(req.params.id).populate("categoryId", "name")
 
     if (!product) {
@@ -63,6 +84,6 @@ exports.getProductById = async (req, res) => {
 
     res.json(product)
   } catch (error) {
-    res.status(500).json({ message: "Failed to fetch product", error: error.message })
+    res.status(503).json({ message: "Database unavailable", error: error.message })
   }
 }
